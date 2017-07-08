@@ -681,7 +681,8 @@ var InMemoryBackendService = (function () {
         if (/commands\/$/i.test(reqInfo.base)) {
             return this.commands(reqInfo);
         }
-        else if (this.inMemDbService[reqMethodName]) {
+        // Don't do an else if to allow interceptor to fall back to default behavior below.
+        if (this.inMemDbService[reqMethodName]) {
             // InMemoryDbService has an overriding interceptor for this HTTP method; call it
             // The interceptor result must be an Observable<Response>
             var interceptorArgs = {
@@ -691,9 +692,12 @@ var InMemoryBackendService = (function () {
                 passThruBackend: this.passThruBackend
             };
             var interceptorResponse = this.inMemDbService[reqMethodName](interceptorArgs);
-            return this.addDelay(interceptorResponse);
+            if (interceptorResponse !== null) {
+                return this.addDelay(interceptorResponse);
+            }
         }
-        else if (reqInfo.collection) {
+        // Standard behavior without interceptors
+        if (reqInfo.collection) {
             // request is for a collection created by the InMemoryDbService
             return this.addDelay(this.collectionHandler(reqInfo));
         }
